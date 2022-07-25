@@ -1,7 +1,8 @@
 const mongoose = require("mongoose")
 const userModel = require("../models/userModel");
-const aws = require("aws-sdk")
-
+const aws = require("aws-sdk");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken")
 
 
 // ==================================  Connecting with AWS ==========================//
@@ -43,25 +44,184 @@ let uploadFile = async (file) => {
 const createUser = async function (req, res) {
     try {
         let data = req.body;
-      
+console.log(data)
         let files = req.files
-        if(files && files.length>0){
-            let fileS3Link =  await uploadFile(files[0])
+        if (files && files.length > 0) {
+            let fileS3Link = await uploadFile(files[0])
             data.profileImage = fileS3Link
-        } else{
-            return res.status(400).send({status:false , msg :" plese upload file"})
+        } else {
+            return res.status(400).send({ status: false, msg: " plese upload file" })
+        }
+        // validation 
+
+        if (Object.keys(data).length == 0) {
+            return res.status(400).send({ status: false, msg: "plese enter data in body to create user" })
+        }
+        //  destructring
+        let { fname, lname, email, phone, password, address } = data
+
+
+        if (!fname) {
+            return res.status(400).send({ status: false, msg: "please enter fname" })
+        }
+        
+
+        if (!/^[a-zA-Z]*$/.test(fname)) {
+            return res.status(400).send({ status: false, msg: "enter fname only in alphabet no space allow" })
+
         }
 
+        if (!lname) {
+            return res.status(400).send({ status: false, msg: "please enter lname" })
+        }
+
+        if (!/^[a-zA-Z]*$/.test(lname)) {
+            return res.status(400).send({ status: false, msg: "enter lname only in alphabet no space allow" })
+
+        }
+        if (!email) {
+            return res.status(400).send({ status: false, msg: " please enter email" })
+        }
+
+        if (!/^([0-9a-z]([-_\\.]*[0-9a-z]+)*)@([a-z]([-_\\.]*[a-z]+)*)[\\.]([a-z]{2,9})+$/.test(email)) {
+            return res.status(400).send({ status: false, message: "Entered email is invalid" });
+        }
+
+        let existemail = await userModel.findOne({ email: email })
+        if (existemail) {
+            return res.status(400).send({ status: false, msg: "this email is already resister in our Database" })
+        }
+
+        if (!phone) {
+            return res.status(400).send({ status: false, msg: " please enter phone" })
+        }
+
+        if (!/^[6-9]\d{9}$/.test(phone)) {
+            return res.status(400).send({ status: false, msg: "ivalid phone number" })
+        }
+
+        let existPhone = await userModel.findOne({ phone: phone })
+
+        if (existPhone) {
+            return res.status(400).send({ status: false, msg: "this phone number is already exist" })
+        }
+        if (!password) {
+            return res.status(400).send({ status: false, msg: " please enter password" })
+
+        }
+        if (password.length < 8 || password.length > 15) {
+            return res.status(400).send({ status: false, msg: " password length should be 8 to 15 " })
 
 
+        }
+        const salt = await bcrypt.genSalt(10);
+        // now we set user password to hashed password
+        data.password = await bcrypt.hash(password, salt);
 
 
+        if (!address) {
+            return res.status(400).send({ status: false, msg: " please enter address" })
+
+        }
+
+        // shipping
+        if (!address.shipping) {
+            return res.status(400).send({ status: false, msg: " please enter  shipping address" })
+
+        }
+        if (!address.shipping.street) {
+            return res.status(400).send({ status: false, msg: " please enter  shipping street" })
+
+        }
+        if (!address.shipping.city) {
+            return res.status(400).send({ status: false, msg: " please enter  shipping city" })
+
+        }
+
+        if (!address.shipping.pincode) {
+            return res.status(400).send({ status: false, msg: " please enter  shipping pinecode" })
+
+        }
+
+        if (address.shipping.pincode < 100000 || address.shipping.pincode > 999999) {
+            return res.status(400).send({ status: false, msg: "   shipping pinecode legth should be 6 digit" })
+
+        }
+
+        // billing
+
+        if (!address.billing) {
+            return res.status(400).send({ status: false, msg: " please enter  billing address" })
+
+        }
+        if (!address.billing.street) {
+            return res.status(400).send({ status: false, msg: " please enter  billing street" })
+
+        }
+        if (!address.billing.city) {
+            return res.status(400).send({ status: false, msg: " please enter  billing city" })
+
+        }
+
+        if (!address.billing.pincode) {
+            return res.status(400).send({ status: false, msg: " please enter  billing pinecode" })
+
+        }
+
+        if (address.billing.pincode < 100000 || address.shipping.pincode > 999999) {
+            return res.status(400).send({ status: false, msg: "   billing pinecode legth should be 6 digit" })
+
+        }
+
+        console.log(data)
         let newUser = await userModel.create(data)
-        return res.status(201).send({ status: true, data: newUser })
+        return res.status(201).send({ status: true,message: "user created successfully", data: newUser })
 
     } catch (err) {
         return res.status(500).send({ status: false, message: err.message })
     }
 }
 
-module.exports = { createUser }
+// =========================================  LOGIN USER =========================================//
+
+const userLogin = async function (req, res) {
+    try {
+
+
+        if (Object.keys(req.body).length == 0) {
+            return res.status(400).send({ status: false, msg: "plese enter credincials in body" })
+        }
+        if (!req.body.email) {
+            return res.status(400).send({ status: false, msg: "plese enter email in body" })
+        }
+
+        if (!req.body.password) {
+            return res.status(400).send({ status: false, msg: "plese enter password in body" })
+        }
+        let existUser = await userModel.findOne({ email: req.body.email })
+        if (!existUser) {
+            return res.status(401).send({ status: false, msg: "invalid credincial" })
+        }
+        let validPassword = await bcrypt.compare(req.body.password, existUser.password)
+        if (!validPassword) {
+            return res.status(401).send({ status: false, msg: "invalid credincial" })
+
+        }
+
+        let token = jwt.sign({
+            userId: existUser._id.toString(),
+            iat: Math.floor(Date.now()/1000),
+            exp :  Math.floor(Date.now()/1000) + 60*60
+
+        } ,"GROUP-35")
+
+        let data ={
+            userId: existUser._id,
+            token: token
+        }
+        return res.status(200).send({status: true, message: "user login Successfully", data: data})
+    } catch (err) {
+        return res.status(500).send({ status: false, mesage: err.message })
+    }
+}
+module.exports = { createUser, userLogin }
