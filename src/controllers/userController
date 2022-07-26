@@ -44,7 +44,7 @@ let uploadFile = async (file) => {
 const createUser = async function (req, res) {
     try {
         let data = req.body;
-console.log(data)
+        console.log(data)
         let files = req.files
         if (files && files.length > 0) {
             let fileS3Link = await uploadFile(files[0])
@@ -64,7 +64,7 @@ console.log(data)
         if (!fname) {
             return res.status(400).send({ status: false, msg: "please enter fname" })
         }
-        
+
 
         if (!/^[a-zA-Z]*$/.test(fname)) {
             return res.status(400).send({ status: false, msg: "enter fname only in alphabet no space allow" })
@@ -175,7 +175,7 @@ console.log(data)
 
         console.log(data)
         let newUser = await userModel.create(data)
-        return res.status(201).send({ status: true,message: "user created successfully", data: newUser })
+        return res.status(201).send({ status: true, message: "user created successfully", data: newUser })
 
     } catch (err) {
         return res.status(500).send({ status: false, message: err.message })
@@ -195,6 +195,7 @@ const userLogin = async function (req, res) {
             return res.status(400).send({ status: false, msg: "plese enter email in body" })
         }
 
+
         if (!req.body.password) {
             return res.status(400).send({ status: false, msg: "plese enter password in body" })
         }
@@ -210,16 +211,16 @@ const userLogin = async function (req, res) {
 
         let token = jwt.sign({
             userId: existUser._id.toString(),
-            iat: Math.floor(Date.now()/1000),
-            exp :  Math.floor(Date.now()/1000) + 60*60
+            iat: Math.floor(Date.now() / 1000),
+            exp: Math.floor(Date.now() / 1000) + 60 * 60
 
-        } ,"GROUP-35")
+        }, "GROUP-35")
 
-        let data ={
+        let data = {
             userId: existUser._id,
             token: token
         }
-        return res.status(200).send({status: true, message: "user login Successfully", data: data})
+        return res.status(200).send({ status: true, message: "user login Successfully", data: data })
     } catch (err) {
         return res.status(500).send({ status: false, mesage: err.message })
     }
