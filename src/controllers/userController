@@ -44,7 +44,6 @@ let uploadFile = async (file) => {
 const createUser = async function (req, res) {
     try {
         let data = req.body;
-console.log(data)
         let files = req.files
         if (files && files.length > 0) {
             let fileS3Link = await uploadFile(files[0])
@@ -64,7 +63,7 @@ console.log(data)
         if (!fname) {
             return res.status(400).send({ status: false, msg: "please enter fname" })
         }
-        
+
 
         if (!/^[a-zA-Z]*$/.test(fname)) {
             return res.status(400).send({ status: false, msg: "enter fname only in alphabet no space allow" })
@@ -133,9 +132,15 @@ console.log(data)
             return res.status(400).send({ status: false, msg: " please enter  shipping street" })
 
         }
+        if (!/^\d*[a-zA-Z\d\s,.]*$/.test(address.shipping.street)) {
+            return res.status(400).send({ status: false, message: "The street should be in number and alphabet" });
+        }
         if (!address.shipping.city) {
             return res.status(400).send({ status: false, msg: " please enter  shipping city" })
 
+        }
+        if(!/[A-Za-z]/.test(address.shipping.city)){
+            return res.status(400).send({ status: false, message: "The city should be only in alphabet" });
         }
 
         if (!address.shipping.pincode) {
@@ -143,9 +148,8 @@ console.log(data)
 
         }
 
-        if (address.shipping.pincode < 100000 || address.shipping.pincode > 999999) {
-            return res.status(400).send({ status: false, msg: "   shipping pinecode legth should be 6 digit" })
-
+        if(!/[0-9]{6}/.test(address.shipping.pincode)){
+            return res.status(400).send({status: false , message: "please shipping pincode in number only and length must be 6" })
         }
 
         // billing
@@ -158,9 +162,15 @@ console.log(data)
             return res.status(400).send({ status: false, msg: " please enter  billing street" })
 
         }
+        if (!/^\d*[a-zA-Z\d\s,.]*$/.test(address.billing.street)) {
+            return res.status(400).send({ status: false, message: "The street should be in number and alphabet" });
+        }
         if (!address.billing.city) {
             return res.status(400).send({ status: false, msg: " please enter  billing city" })
 
+        }
+        if(!/[A-Za-z]/.test(address.billing.city)){
+            return res.status(400).send({ status: false, message: "The city should be only in alphabet" });
         }
 
         if (!address.billing.pincode) {
@@ -168,14 +178,13 @@ console.log(data)
 
         }
 
-        if (address.billing.pincode < 100000 || address.shipping.pincode > 999999) {
-            return res.status(400).send({ status: false, msg: "   billing pinecode legth should be 6 digit" })
-
+        if(!/[0-9]{6}/.test(address.billing.pincode)){
+            return res.status(400).send({status: false , message: "please billing pincode in number only and length must be 6" })
         }
 
-        console.log(data)
+        // console.log(data)
         let newUser = await userModel.create(data)
-        return res.status(201).send({ status: true,message: "user created successfully", data: newUser })
+        return res.status(201).send({ status: true, message: "user created successfully", data: newUser })
 
     } catch (err) {
         return res.status(500).send({ status: false, message: err.message })
@@ -210,18 +219,182 @@ const userLogin = async function (req, res) {
 
         let token = jwt.sign({
             userId: existUser._id.toString(),
-            iat: Math.floor(Date.now()/1000),
-            exp :  Math.floor(Date.now()/1000) + 60*60
+            iat: Math.floor(Date.now() / 1000),
+            exp: Math.floor(Date.now() / 1000) + 60 * 60
 
-        } ,"GROUP-35")
+        }, "GROUP-35")
 
-        let data ={
+        let data = {
             userId: existUser._id,
             token: token
         }
-        return res.status(200).send({status: true, message: "user login Successfully", data: data})
+        return res.status(200).send({ status: true, message: "user login Successfully", data: data })
     } catch (err) {
         return res.status(500).send({ status: false, mesage: err.message })
     }
 }
-module.exports = { createUser, userLogin }
+
+const getUserProfile = async function (req, res) {
+    try {
+        let userId = req.params.userId
+        if (userId == ":userId") {
+            return res.status(400).send({ status: false, message: "please enter userid in params" })
+        }
+        if (!mongoose.isValidObjectId(userId)) {
+            return res.status(400).send({ status: false, message: "Invalid userid" })
+        }
+        let decodedtoken = req.decodedtoken
+        if (decodedtoken.userId != userId) {
+            return res.status(401).send({ status: false, message: "you are not authenticated" })
+        }
+        let user = await userModel.findOne({ _id: userId })
+        return res.status(200).send({ status: true, message: "User profile details", data: user })
+    }
+    catch (err) {
+        res.status(500).send({ status: false, message: err.message })
+    }
+}
+
+const updateUserProfile = async function (req, res) {
+    try {
+        let userId = req.params.userId
+        if (userId == ":userId") {
+            return res.status(400).send({ status: false, message: "please enter userid in params" })
+        }
+        if (!mongoose.isValidObjectId(userId)) {
+            return res.status(400).send({ status: false, message: "Invalid userid" })
+        }
+        let decodedtoken = req.decodedtoken
+        if (decodedtoken.userId != userId) {
+            return res.status(403).send({ status: false, message: "you are not authorize" })
+        }
+        let user = await userModel.findById(userId)
+        if(req.body.fname){
+            if(!/^[a-zA-Z]*$/.test(req.body.fname)){
+                return res.status(400).send({status: false , message: "please enter fname only in alphabet to update"})
+            }
+            else{
+                user.fname = req.body.fname
+            }
+        }
+
+        if(req.body.lname){
+            if(!/^[a-zA-Z]*$/.test(req.body.lname)){
+                return res.status(400).send({status: false , message: "please enter lname only in alphabet to update"})
+            }
+            else{
+                user.lname = req.body.lname
+            }
+        }
+
+        if(req.body.email){
+            if(!/^([0-9a-z]([-_\\.]*[0-9a-z]+)*)@([a-z]([-_\\.]*[a-z]+)*)[\\.]([a-z]{2,9})+$/.test(req.body.email)){
+                return res.status(400).send({status: false , message: "please enter valid email to update"})
+            }
+            let existemail = await userModel.findOne({ email: req.body.email })
+            if (existemail) {
+                return res.status(400).send({ status: false, msg: "this email is already resister in our Database please enter another to update" })
+            }
+            else{
+                user.email = req.body.email
+            }
+        }
+
+        if(req.body.phone){
+            if(!/^[6-9]\d{9}$/.test(req.body.phone)){
+                return res.status(400).send({status: false , message: "please enter valid phone number to update"})
+            }
+            let existphone = await userModel.findOne({ phone: req.body.phone })
+            if (existphone) {
+                return res.status(400).send({ status: false, msg: "this phoe number is already resister in our Database please enter another phone number to update" })
+            }
+            else{
+                user.phone = req.body.phone
+            }
+        }
+
+        if(req.body.password){
+            if (req.body.password.length < 8 || req.body.password.length > 15) {
+                return res.status(400).send({ status: false, msg: " password length should be 8 to 15 " })
+            }
+            else{
+                const salt = await bcrypt.genSalt(10);
+            // now we set user password to hashed password
+                user.password = await bcrypt.hash(req.body.password, salt);
+            }
+        }
+        // update shipping address
+        if(req.body.address){
+        if(req.body.address.shipping){
+        if(req.body.address.shipping.street){
+            if (!/^\d*[a-zA-Z\d\s,.]*$/.test(req.body.address.shipping.street)) {
+                return res.status(400).send({ status: false, message: "The street should be in number and alphabet" });
+            }
+            else{
+                user.address.shipping.street = req.body.address.shipping.street
+            }
+        }
+
+        if(req.body.address.shipping.city){
+            if(!/[A-Za-z]/.test(req.body.address.shipping.city)){
+                return res.status(400).send({ status: false, message: "The city should be only in alphabet" });
+            }
+            else{
+                user.address.shipping.city = req.body.address.shipping.city
+            }
+        }
+
+        if(req.body.address.shipping.pincode){
+            if(!/[0-9]{6}/.test(req.body.address.shipping.pincode)){
+                return res.status(400).send({status: false , message: "please shipping pincode in number only and length must be 6" })
+            }
+            else{
+                user.address.shipping.pincode = req.body.address.shipping.pincode
+            }
+        }
+    }
+        // update billing address
+        if(req.body.address.billing){
+        if(req.body.address.billing.street){
+            if (!/^\d*[a-zA-Z\d\s,.]*$/.test(req.body.address.billing.street)) {
+                return res.status(400).send({ status: false, message: "The street should be in number and alphabet" });
+            }
+            else{
+                user.address.billing.street = req.body.address.billing.street
+            }
+        }
+
+        if(req.body.address.billing.city){
+            if(!/[A-Za-z]/.test(req.body.address.billing.city)){
+                return res.status(400).send({ status: false, message: "The city should be only in alphabet" });
+            }
+            else{
+                user.address.billing.city = req.body.address.billing.city
+            }
+        }
+
+        if(req.body.address.billing.pincode){
+            if( !/[0-9]{6}/.test(req.body.address.billing.pincode)){
+                return res.status(400).send({status: false , message: "please billing pincode in number only and length must be 6" })
+            }
+            
+            else{
+                user.address.billing.pincode = req.body.address.billing.pincode
+            }
+        }
+    }
+    }
+
+        if (req.files && req.files.length > 0) {
+            let fileS3Link = await uploadFile(req.files[0])
+            user.profileImage = fileS3Link
+        }
+        await user.save()
+        return res.status(200).send({status: true , message: "user profile updated" , data : user})
+
+    }
+    catch (err) {
+        return res.status(500).send({status: false, message: err.message})
+    }
+}
+module.exports = { createUser, userLogin, getUserProfile , updateUserProfile }
