@@ -1,0 +1,227 @@
+
+const mongoose = require("mongoose");
+const productModel = require("../models/productModel");
+const aws = require("aws-sdk")
+
+//====================================== CONNECTING WITH AWS ==========================================//
+
+aws.config.update({
+    accessKeyId: "AKIAY3L35MCRVFM24Q7U",
+    secretAccessKey: "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",
+    region: "ap-south-1"
+})
+
+let uploadFile = async (file) => {
+    return new Promise(function (resolve, reject) {
+        // this function will upload file to aws and return the link
+        let s3 = new aws.S3({ apiVersion: '2006-03-01' }); // we will be using the s3 service of aws
+
+        var uploadParams = {
+            ACL: "public-read",
+            Bucket: "classroom-training-bucket",  //HERE
+            Key: "anil/" + file.originalname, //HERE 
+            Body: file.buffer
+        }
+
+
+        s3.upload(uploadParams, function (err, data) {
+            if (err) {
+                return reject({ "error": err })
+            }
+            // console.log(data)
+            // console.log("file uploaded succesfully")
+            return resolve(data.Location)
+        })
+
+    })
+}
+
+
+
+
+
+
+
+
+//=====================================  CREATE PRODUCT ////////////////////////////////////////
+
+
+const createProduct = async function (req, res) {
+    try {
+        let data = req.body
+
+        let { title, description, price, isFreeShipping, style, availableSizes, installments } = data
+
+        // validation
+        if (Object.keys(data).length == 0) {
+            return res.status(400).send({ status: false, message: "please enter details in body to create product" })
+        }
+
+        if (!title) {
+            return res.status(400).send({ status: false, message: "please enter title" })
+        }
+        if (!/[a-zA-Z\s]/.test(title)) {
+            return res.status(400).send({ status: false, message: "please enter title only in alphabet" })
+        }
+        let existTitle = await productModel.findOne({ title: title })
+        if (existTitle) {
+            return res.status(400).send({ status: false, message: "title already exist" })
+        }
+        if (!description) {
+            return res.status(400).send({ status: false, message: "please enter description" })
+        }
+        if (!/[a-zA-Z\s]/.test(description)) {
+            return res.status(400).send({ status: false, message: "please enter description only in alphabet" })
+        }
+        if (!price) {
+            return res.status(400).send({ status: false, message: "please enter price" })
+        }
+        if (!/[0-9\.]/.test(price)) {
+            return res.status(400).send({ status: false, message: "please enter price only in Number or decimal" })
+        }
+
+        if (isFreeShipping != undefined && !/^(true|false)$/.test(isFreeShipping))
+         {
+            return res.status(400).send({ status: false, message: "isFreeshipping should be in boolean" })
+        }
+        if (style && style.trim().length == 0) {    // doubt
+            return res.status(400).send({ status: false, message: "please enter valid style" })
+        }
+
+        if (!/[a-zA-z\s]/.test(style)) {
+            return res.status(400).send({ status: false, message: "style should be only in alphabet letter" })
+        }
+
+
+
+        if (!availableSizes) {
+            return res.status(400).send({ status: false, message: `please enter availableSizes atleast one it should be from ["S", "XS","M","X", "L","XXL", "XL"]` })
+        }
+
+        availableSizes = JSON.parse(availableSizes)
+        console.log(availableSizes)
+
+        let sizes = ["S", "XS", "M", "X", "L", "XXL", "XL"]
+
+        for (let e of availableSizes) {
+            if (!sizes.includes(e)) {
+                return res.status(400).send({ status: false, message: `availableSize should be among these  ["S", "XS","M","X", "L","XXL", "XL"]` })
+                break;
+            }
+
+        }
+
+
+        data.availableSizes = availableSizes
+        console.log(typeof installments)
+
+        if (installments && !/[0-9]/.test(installments)) {
+            return res.status(400).send({ status: false, message: "installment should be only in Number" })
+
+        }
+
+
+
+        data.currencyId = "INR"
+        data.currencyFormat = "₹"
+
+
+
+        if (req.files && req.files.length > 0) {
+            let fileS3Link = await uploadFile(req.files[0])
+            data.productImage = fileS3Link
+        } else {
+            return res.status(400).send({ satus: false, message: " please upload product image file" })
+        }
+
+        let savedData = await productModel.create(data)
+        return res.status(201).send({ status: true, message: "product successfully created", data: savedData })
+
+
+
+    }
+    catch (err) {
+        return res.status(500).send({ satatus: false, message: err.message })
+    }
+}
+
+
+
+// ======================================= get product  By filter ============================//
+
+
+const filterProduct = async function(req,res){
+    try{
+
+        let filter ={
+            isDeleted:false
+        }
+        let {size, name, priceGraterThan, priceLessThan, priceSort} =req.query
+
+        if(size){
+            filter.availableSizes= size
+        }
+        if(name){
+            let regex =new RegExp(name,'i')
+            filter.title = {"$regex" :regex}
+        }
+
+        if(priceGraterThan && priceLessThan){
+            filter.price = {'$gt': priceGraterThan , '$lt': priceLessThan}
+        }
+        else if(priceGraterThan){
+            filter.price = {'$gt': priceGraterThan}
+        }
+        else if(priceLessThan){
+            filter.price = {'$lt': priceLessThan}
+        }
+        console.log(filter)
+        let sort ={price : 1}
+       if(priceSort){
+           if(priceSort==-1){
+               sort.price= -1
+               
+           } else{
+               sort.price =1
+           }
+       }
+           let products = await productModel.find(filter).sort(sort)
+           if(products.length==0){
+               return res.status(404).send({status:false, message:"no such product found"})
+           }
+          
+return res.status(200).send({status:true, message:"product list", data:products})
+      
+    }
+    catch (err) {
+        return res.status(500).send({ satatus: false, message: err.message })
+    }
+    
+}
+
+// ============================================ GET PRODUCT BY PRODUCT ID=========================//
+
+const getProductById = async function(req,res){
+    try{
+        let productId = req.params.productId
+       
+        if (productId == ":productId") {
+            return res.status(400).send({ status: false, message: "please enter productId in params" })
+        }
+        if (!mongoose.isValidObjectId(productId)) {
+            return res.status(400).send({ status: false, message: "Invalid productId" })
+        }
+
+        let product = await productModel.findOne({_id:productId , isDeleted: false})
+        if(!product){
+            return res.status(404).send({status:false, message : "product doesn't exist with this productId"})
+        }
+        return res.status(200).send({status:true, message:"product Details", data:product})
+
+    } catch (err) {
+        return res.status(500).send({ satatus: false, message: err.message })
+    }
+    
+}
+
+module.exports = { createProduct, filterProduct,filterProduct,getProductById }
