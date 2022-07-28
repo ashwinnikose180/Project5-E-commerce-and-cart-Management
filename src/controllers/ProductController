@@ -84,9 +84,7 @@ const createProduct = async function (req, res) {
          {
             return res.status(400).send({ status: false, message: "isFreeshipping should be in boolean" })
         }
-        if (style && style.trim().length == 0) {    // doubt
-            return res.status(400).send({ status: false, message: "please enter valid style" })
-        }
+       
 
         if (!/[a-zA-z\s]/.test(style)) {
             return res.status(400).send({ status: false, message: "style should be only in alphabet letter" })
@@ -97,9 +95,8 @@ const createProduct = async function (req, res) {
         if (!availableSizes) {
             return res.status(400).send({ status: false, message: `please enter availableSizes atleast one it should be from ["S", "XS","M","X", "L","XXL", "XL"]` })
         }
-
-        availableSizes = JSON.parse(availableSizes)
-        console.log(availableSizes)
+        availableSizes =availableSizes.split(",").map(e=> e.trim())
+       // availableSizes = JSON.parse(availableSizes)
 
         let sizes = ["S", "XS", "M", "X", "L", "XXL", "XL"]
 
@@ -113,8 +110,7 @@ const createProduct = async function (req, res) {
 
 
         data.availableSizes = availableSizes
-        console.log(typeof installments)
-
+        
         if (installments && !/[0-9]/.test(installments)) {
             return res.status(400).send({ status: false, message: "installment should be only in Number" })
 
@@ -175,7 +171,7 @@ const filterProduct = async function(req,res){
         else if(priceLessThan){
             filter.price = {'$lt': priceLessThan}
         }
-        console.log(filter)
+        
         let sort ={price : 1}
        if(priceSort){
            if(priceSort==-1){
