@@ -4,6 +4,7 @@ const userController = require("../controllers/userController")
 const {authenticate} = require('../middleware/auth')
 const productController = require("../controllers/productController")
 
+
 //===================== USER=========================================//
 
 router.post("/register", userController.createUser)
@@ -16,5 +17,12 @@ router.put("/user/:userId/profile" , authenticate , userController.updateUserPro
 router.post("/products",productController.createProduct)
 router.get("/products",productController.filterProduct)
 router.get("/products/:productId",productController.getProductById)
+router.put("/products/:productId" , productController.updateProduct)
+router.delete("/products/:productId" , productController.deleteProduct)
+
+
+router.all("/**" , (req , res)=>{
+    res.status(400).send({message: "please enter correct endpoint"})
+})
 
 module.exports = router

@@ -126,6 +126,17 @@ const createUser = async function (req, res) {
 
         }
 
+        if(typeof address == "string"){
+            try{
+            address = JSON.parse(address)
+            }
+            catch(err){
+                return res.status(400).send({status: false, message: "please enter address field correctly"})
+            }
+            
+        }
+        // console.log(address)
+
         // shipping
         if (!address.shipping) {
             return res.status(400).send({ status: false, msg: " please enter  shipping address" })
@@ -151,8 +162,8 @@ const createUser = async function (req, res) {
 
         }
 
-        if(!/[0-9]{6}/.test(address.shipping.pincode)){
-            return res.status(400).send({status: false , message: "please shipping pincode in number only and length must be 6" })
+        if(!/^[1-9][0-9]{5}/.test(address.shipping.pincode)){
+            return res.status(400).send({status: false , message: "please shipping pincode in number only and length must be 6 and should not start with zero" })
         }
 
         // billing
@@ -181,9 +192,11 @@ const createUser = async function (req, res) {
 
         }
 
-        if(!/[0-9]{6}/.test(address.billing.pincode)){
-            return res.status(400).send({status: false , message: "please billing pincode in number only and length must be 6" })
+        if(!/^[1-9][0-9]{5}/.test(address.billing.pincode)){
+            return res.status(400).send({status: false , message: "please shipping pincode in number only and length must be 6 and should not start with zero" })
         }
+
+        data.address = address
 
         // console.log(data)
         let newUser = await userModel.create(data)
@@ -329,6 +342,14 @@ const updateUserProfile = async function (req, res) {
         }
         // update shipping address
         if(req.body.address){
+        if(typeof req.body.address == "string"){
+            try{
+            req.body.address = JSON.parse(req.body.address)
+            }
+            catch(err){
+                return res.status(400).send({status: false , message: "please enter address field value correctly"})
+            }
+        }
         if(req.body.address.shipping){
         if(req.body.address.shipping.street){
             if (!/^\d*[a-zA-Z\d\s,.]*$/.test(req.body.address.shipping.street)) {
@@ -349,8 +370,8 @@ const updateUserProfile = async function (req, res) {
         }
 
         if(req.body.address.shipping.pincode){
-            if(!/[0-9]{6}/.test(req.body.address.shipping.pincode)){
-                return res.status(400).send({status: false , message: "please shipping pincode in number only and length must be 6" })
+            if(!/[1-9][0-9]{5}/.test(req.body.address.shipping.pincode)){
+                return res.status(400).send({status: false , message: "please shipping pincode in number only and length must be 6 and should not start with zero" })
             }
             else{
                 user.address.shipping.pincode = req.body.address.shipping.pincode
@@ -378,8 +399,8 @@ const updateUserProfile = async function (req, res) {
         }
 
         if(req.body.address.billing.pincode){
-            if( !/[0-9]{6}/.test(req.body.address.billing.pincode)){
-                return res.status(400).send({status: false , message: "please billing pincode in number only and length must be 6" })
+            if( !/^[1-9][0-9]{5}/.test(req.body.address.billing.pincode)){
+                return res.status(400).send({status: false , message: "please shipping pincode in number only and length must be 6 and should not start with zero" })
             }
             
             else{
@@ -393,6 +414,7 @@ const updateUserProfile = async function (req, res) {
             let fileS3Link = await uploadFile(req.files[0])
             user.profileImage = fileS3Link
         }
+        // console.log(user)
         await user.save()
         return res.status(200).send({status: true , message: "user profile updated" , data : user})
 
