@@ -38,6 +38,10 @@ let uploadFile = async (file) => {
     })
 }
 
+function isImageFile(file){
+    return (file.mimetype.slice(0 , 5) == "image")
+}
+
 // ======================================  CREATE NEW USER =========================================//
 
 
@@ -49,6 +53,9 @@ const createUser = async function (req, res) {
         let files = req.files
 
         if (files && files.length > 0) {
+            if(!isImageFile(files[0])){
+                return res.status(400).send({status: false , message: "invalid file type , accepted file type should be image only"})
+            }
             let fileS3Link = await uploadFile(files[0])
             data.profileImage = fileS3Link
         } else {
@@ -411,6 +418,9 @@ const updateUserProfile = async function (req, res) {
         }
 
         if (req.files && req.files.length > 0) {
+            if(!isImageFile(files[0])){
+                return res.status(400).send({status: false , message: "invalid file type , accepted file type should be image only"})
+            }
             let fileS3Link = await uploadFile(req.files[0])
             user.profileImage = fileS3Link
         }
