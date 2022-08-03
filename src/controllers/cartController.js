@@ -46,11 +46,10 @@ const createCart = async function (req, res) {
 
         let cart = await cartModel.findOne({ userId: userId})
         if (cart) {
-            
 
             let found = false
             for (let obj of cart.items) {
-                if (obj.productId == productId) {
+                if (obj.productId== productId) {
                     obj.quantity += 1
                     found = true
                 }
@@ -62,7 +61,7 @@ const createCart = async function (req, res) {
             cart.totalPrice += product.price
             cart.totalItems = cart.items.length
             await cart.save()
-            await cart.populate([{path: "items.productId"}])
+            cart = await cart.populate([{path : "items.productId"}])
             return res.status(201).send({ status: true, message: "items added to cart successfully", data: cart })
         }
         else {
@@ -70,7 +69,7 @@ const createCart = async function (req, res) {
             let data = { userId: userId, items: [{ productId: productId, quantity: 1 }], totalPrice: product.price, totalItems: 1 }
 
             let ncart = await cartModel.create(data)
-            await ncart.populate([{path: "items.productId"}])
+            ncart = await ncart.populate([{path : "items.productId"}])
             return res.status(201).send({ status: true, message: "cart created and items added to cart successfully", data: ncart })
         }
 
@@ -152,7 +151,7 @@ const updateCart = async function (req, res) {
                 return res.status(400).send({ status: false, message: "Product not found in the cart" })
             }
             await cart.save()
-            await cart.populate([{path: "items.productId"}])
+            await cart.populate([{path : "items.productId"}])
             return res.status(200).send({ status: true, message: "cart updated successfully", data: cart })
         }
         else {
@@ -175,7 +174,7 @@ const updateCart = async function (req, res) {
                 return res.status(400).send({ status: false, message: "Product not found in the cart" })
             }
             await cart.save()
-            await cart.populate([{path: "items.productId"}])
+            await cart.populate([{path : "items.productId"}])
             return res.status(200).send({ status: true, message: "cart updated successfully", data: cart })
         }
 
@@ -204,7 +203,7 @@ const getCartDetails = async function (req, res) {
         if (decodedToken.userId != userId) {
             return res.status(403).send({ status: false, message: "you are not authorized to access others cart" })
         }
-        let cart = await (await cartModel.findOne({userId: userId})).populate([{path: "items.productId"}])
+        let cart = await cartModel.findOne({userId: userId}).populate([{path : "items.productId"}])
         if(!cart){
             return res.status(404).send({status: false , message: "no cart found with this user id or cart was deleted"})
         }
