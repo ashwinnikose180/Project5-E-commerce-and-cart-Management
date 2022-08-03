@@ -58,6 +58,7 @@ const createUser = async function (req, res) {
             }
             let fileS3Link = await uploadFile(files[0])
             data.profileImage = fileS3Link
+
         } else {
             return res.status(400).send({ status: false, msg: " plese upload file" })
         }
@@ -75,7 +76,7 @@ const createUser = async function (req, res) {
         }
 
 
-        if (!/^[a-zA-Z]*$/.test(fname)) {
+        if (!/^[a-zA-Z]*$/.test(fname.trim())) {
             return res.status(400).send({ status: false, msg: "enter fname only in alphabet no space allow" })
 
         }
@@ -84,7 +85,7 @@ const createUser = async function (req, res) {
             return res.status(400).send({ status: false, msg: "please enter lname" })
         }
 
-        if (!/^[a-zA-Z]*$/.test(lname)) {
+        if (!/^[a-zA-Z]*$/.test(lname.trim())) {
             return res.status(400).send({ status: false, msg: "enter lname only in alphabet no space allow" })
 
         }
@@ -106,7 +107,7 @@ const createUser = async function (req, res) {
         }
 
         if (!/^[6-9]\d{9}$/.test(phone)) {
-            return res.status(400).send({ status: false, msg: "ivalid phone number" })
+            return res.status(400).send({ status: false, msg: "ivalid phone number or space is not allowed" })
         }
 
         let existPhone = await userModel.findOne({ phone: phone })
@@ -149,19 +150,19 @@ const createUser = async function (req, res) {
             return res.status(400).send({ status: false, msg: " please enter  shipping address" })
 
         }
-        if (!address.shipping.street) {
+        if (!address.shipping.street.trim()) {
             return res.status(400).send({ status: false, msg: " please enter  shipping street" })
 
         }
         if (!/^\d*[a-zA-Z\s,.]+$/.test(address.shipping.street)) {
-            return res.status(400).send({ status: false, message: "The street should be in number and alphabet" });
+            return res.status(400).send({ status: false, message: "The street should be in number and alphabet " });
         }
-        if (!address.shipping.city) {
+        if (!address.shipping.city.trim()) {
             return res.status(400).send({ status: false, msg: " please enter  shipping city" })
 
         }
         if (!/[A-Za-z]/.test(address.shipping.city)) {
-            return res.status(400).send({ status: false, message: "The city should be only in alphabet" });
+            return res.status(400).send({ status: false, message: "The city should be only in alphabet " });
         }
 
         if (!address.shipping.pincode) {
@@ -179,14 +180,14 @@ const createUser = async function (req, res) {
             return res.status(400).send({ status: false, msg: " please enter  billing address" })
 
         }
-        if (!address.billing.street) {
+        if (!address.billing.street.trim()) {
             return res.status(400).send({ status: false, msg: " please enter  billing street" })
 
         }
         if (!/^\d*[a-zA-Z\s,.]+$/.test(address.billing.street)) {
             return res.status(400).send({ status: false, message: "The street should be in number and alphabet" });
         }
-        if (!address.billing.city) {
+        if (!address.billing.city.trim()) {
             return res.status(400).send({ status: false, msg: " please enter  billing city" })
 
         }
@@ -294,7 +295,7 @@ const updateUserProfile = async function (req, res) {
         }
         let user = await userModel.findById(userId)
         if (req.body.fname) {
-            if (!/^[a-zA-Z]*$/.test(req.body.fname)) {
+            if (!/^[a-zA-Z]*$/.test(req.body.fname.trim())) {
                 return res.status(400).send({ status: false, message: "please enter fname only in alphabet to update" })
             }
             else {
@@ -303,7 +304,7 @@ const updateUserProfile = async function (req, res) {
         }
 
         if (req.body.lname) {
-            if (!/^[a-zA-Z]*$/.test(req.body.lname)) {
+            if (!/^[a-zA-Z]*$/.test(req.body.lname.trim())) {
                 return res.status(400).send({ status: false, message: "please enter lname only in alphabet to update" })
             }
             else {
