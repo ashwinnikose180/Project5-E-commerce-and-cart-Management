@@ -36,11 +36,9 @@ let uploadFile = async (file) => {
     })
 }
 
-
-
-
-
-
+function isImageFile(file){
+    return (file.mimetype.slice(0 , 5) == "image")
+}
 
 
 //=====================================  CREATE PRODUCT ////////////////////////////////////////
@@ -126,6 +124,9 @@ const createProduct = async function (req, res) {
 
 
         if (req.files && req.files.length > 0) {
+            if(!isImageFile(files[0])){
+                return res.status(400).send({status: false , message: "invalid file type , accepted file type should be image only"})
+            }
             let fileS3Link = await uploadFile(req.files[0])
             data.productImage = fileS3Link
         } else {
@@ -303,6 +304,9 @@ const updateProduct = async function (req, res) {
         }
 
         if (req.files && req.files.length > 0) {
+            if(!isImageFile(files[0])){
+                return res.status(400).send({status: false , message: "invalid file type , accepted file type should be image only"})
+            }
             let fileS3Link = await uploadFile(req.files[0])
             product.productImage = fileS3Link
         }
