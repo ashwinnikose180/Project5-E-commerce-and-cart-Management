@@ -53,6 +53,7 @@ const createUser = async function (req, res) {
         let files = req.files
 
         if (files && files.length > 0) {
+            
             if(!isImageFile(files[0])){
                 return res.status(400).send({status: false , message: "invalid file type , accepted file type should be image only"})
             }

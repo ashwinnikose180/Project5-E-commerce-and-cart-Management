@@ -4,7 +4,7 @@ const userController = require("../controllers/userController")
 const {authenticate} = require('../middleware/auth')
 const productController = require("../controllers/productController")
 const cartController = require("../controllers/cartController")
-
+const orderController = require("../controllers/orderController")
 //===================== USER=========================================//
 
 router.post("/register", userController.createUser)
@@ -27,6 +27,15 @@ router.post("/users/:userId/cart" ,authenticate , cartController.createCart)
 router.put("/users/:userId/cart" , authenticate , cartController.updateCart)
 router.get("/users/:userId/cart" , authenticate , cartController.getCartDetails)
 router.delete("/users/:userId/cart" , authenticate , cartController.deletCart)
+
+
+//====================================  ORDER ==================================================//
+
+router.post("/users/:userId/orders", authenticate, orderController.createOrder)
+router.put("/users/:userId/orders", authenticate, orderController.updateOrder)
+
+
+
 
 router.all("/**" , (req , res)=>{
     res.status(400).send({message: "please enter correct endpoint"})

@@ -23,7 +23,7 @@ const createCart = async function (req, res) {
         if (Object.keys(req.body).length == 0) {
             return res.status(400).send({ status: false, message: "please enter the details in request body" })
         }
-        let { cartId, productId } = req.body
+        let {  productId } = req.body
 
         if (!productId) {
             return res.status(400).send({ status: false, message: "enter productid in body" })
