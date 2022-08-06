@@ -70,6 +70,7 @@ const createOrder = async function (req, res) {
 
 
         let orderObj = {
+            _id : order._id,
             userId: order.userId,
             items: order.items,
             totalPrice: order.totalPrice,
@@ -140,6 +141,9 @@ const updateOrder = async function (req, res) {
         }
         if (order.status == "cancelled") {
             return res.status(400).send({ status: false, message: " order has been already cancelled you can't update this order" })
+        }
+        if (order.status == "completed") {
+            return res.status(400).send({ status: false, message: " order has been delivered you can't update this order" })
         }
 
         if (order.cancellable != true && status == "cancelled") {

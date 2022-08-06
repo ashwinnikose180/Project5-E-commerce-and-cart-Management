@@ -36,8 +36,8 @@ let uploadFile = async (file) => {
     })
 }
 
-function isImageFile(file){
-    return (file.mimetype.slice(0 , 5) == "image")
+function isImageFile(file) {
+    return (file.mimetype.slice(0, 5) == "image")
 }
 
 
@@ -81,7 +81,7 @@ const createProduct = async function (req, res) {
         if (isFreeShipping != undefined && !/^(true|false)$/.test(isFreeShipping)) {
             return res.status(400).send({ status: false, message: "isFreeshipping should be in boolean" })
         }
-       
+
 
         if (!/[a-zA-z\s]/.test(style)) {
             return res.status(400).send({ status: false, message: "style should be only in alphabet letter" })
@@ -122,10 +122,10 @@ const createProduct = async function (req, res) {
         data.currencyFormat = "₹"
 
 
-
+        files = req.files
         if (req.files && req.files.length > 0) {
-            if(!isImageFile(files[0])){
-                return res.status(400).send({status: false , message: "invalid file type , accepted file type should be image only"})
+            if (!isImageFile(files[0])) {
+                return res.status(400).send({ status: false, message: "invalid file type , accepted file type should be image only" })
             }
             let fileS3Link = await uploadFile(req.files[0])
             data.productImage = fileS3Link
@@ -235,11 +235,11 @@ const updateProduct = async function (req, res) {
             return res.status(400).send({ status: false, message: "please enter valid productId" })
         }
 
-        let product = await productModel.findOne({_id: productId , isDeleted: false})
+        let product = await productModel.findOne({ _id: productId, isDeleted: false })
         if (!product) {
             return res.status(404).send({ status: false, message: "No product found with this id or deleted" })
         }
-        
+
         let { title, description, price, isFreeShipping, style, availableSizes, installments } = req.body
         if (title) {
             if (!/[a-zA-Z\s]/.test(title)) {
@@ -288,31 +288,32 @@ const updateProduct = async function (req, res) {
                 }
 
             }
-            for(let i of availableSizes){
-                if(!product.availableSizes.includes(i)){
-                product.availableSizes.push(i)
+            for (let i of availableSizes) {
+                if (!product.availableSizes.includes(i)) {
+                    product.availableSizes.push(i)
                 }
             }
         }
 
-        if(installments){
+        if (installments) {
             if (!/[0-9]/.test(installments)) {
                 return res.status(400).send({ status: false, message: "installment should be only in Number" })
-    
+
             }
             product.installments = installments
         }
 
+        files =req.files
         if (req.files && req.files.length > 0) {
-            if(!isImageFile(files[0])){
-                return res.status(400).send({status: false , message: "invalid file type , accepted file type should be image only"})
+            if (!isImageFile(files[0])) {
+                return res.status(400).send({ status: false, message: "invalid file type , accepted file type should be image only" })
             }
             let fileS3Link = await uploadFile(req.files[0])
             product.productImage = fileS3Link
         }
         // console.log(product)
         await product.save()
-        return res.status(200).send({status: true , message: "product updated successfully", data: product})
+        return res.status(200).send({ status: true, message: "product updated successfully", data: product })
     }
     catch (err) {
         res.status(500).send({ status: false, message: err.message })
@@ -323,23 +324,23 @@ const updateProduct = async function (req, res) {
 
 //================================================== DELETE PRODUCT =====================================//
 
-const deleteProduct = async function(req ,res){
-    try{
+const deleteProduct = async function (req, res) {
+    try {
         let productId = req.params.productId
-        if(productId ==":productId"){
-            return res.status(400).send({status:false, message:"please enter productId in params"})
+        if (productId == ":productId") {
+            return res.status(400).send({ status: false, message: "please enter productId in params" })
         }
-        if(!mongoose.isValidObjectId(productId)){
-            return res.status(400).send({status:false, message:"invalid productId"})
+        if (!mongoose.isValidObjectId(productId)) {
+            return res.status(400).send({ status: false, message: "invalid productId" })
         }
-        let product = await productModel.findOne({_id:productId, isDeleted:false})
-        if(!product){
-            return res.status(404).send({status:false, message:"product not found with this productId"})
+        let product = await productModel.findOne({ _id: productId, isDeleted: false })
+        if (!product) {
+            return res.status(404).send({ status: false, message: "product not found with this productId" })
         }
-        product.isDeleted =true
+        product.isDeleted = true
         product.deletedAt = new Date()
         await product.save()
-        res.status(200).send({status: true , message: "Product deleted successfully"})
+        res.status(200).send({ status: true, message: "Product deleted successfully" })
 
     } catch (err) {
         res.status(500).send({ status: false, message: err.message })
@@ -347,4 +348,4 @@ const deleteProduct = async function(req ,res){
 }
 
 
-module.exports = { createProduct, filterProduct, filterProduct, getProductById , updateProduct , deleteProduct}
+module.exports = { createProduct, filterProduct, filterProduct, getProductById, updateProduct, deleteProduct }
