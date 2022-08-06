@@ -25,7 +25,7 @@ const createOrder = async function (req, res) {
             return res.status(400).send({ status: false, message: "please enter the details in request body" })
         }
 
-        let {  cartId, cancellable} = req.body
+        let cartId = req.body.cartId
         if (!cartId) {
             return res.status(400).send({ status: false, message: "please enter cartId in body" })
         }
@@ -49,7 +49,16 @@ const createOrder = async function (req, res) {
             totalPrice: cart.totalPrice,
             totalItems: cart.totalItems,
             totalQuantity: totalQuantity,
-            cancellable : cancellable
+
+        }
+
+        if(req.body.cancellable != undefined){
+            if(typeof req.body.cancellable != "boolean"){
+                return res.status(400).send({status: false , message: "cancellable type should be in boolean"})
+            }
+            else{
+                orderData.cancellable = req.body.cancellable
+            }
         }
 
         let order = await orderModel.create(orderData)
@@ -73,7 +82,7 @@ const createOrder = async function (req, res) {
         }
 
 
-        return res.status(201).send({ status: false, message: "order susscessfully created", data: orderObj })
+        return res.status(201).send({ status: true, message: "order susscessfully created", data: orderObj })
 
 
     } catch (err) {
